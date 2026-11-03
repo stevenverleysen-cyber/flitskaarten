@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Flitskaarten - Ligo</title>
+  
+  <!-- Android & PWA App Instellingen -->
+  <meta name="theme-color" content="#00a8b5">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Flitskaarten Ligo">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  
+  <!-- Jouw Ligo-iconen voor Android startscherm en iOS -->
+  <link rel="icon" type="image/png" sizes="192x192" href="https://www.inbrussel.be/media/rpre5x5w/favicon-512x512.png">
+  <link rel="apple-touch-icon" sizes="192x192" href="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTZ8VKKjXuxeQmb8Z-uIrl6cxzKcuPCBtlh6_3Ke0bAT3B84HCXKsbJch7M&s=10">
+  
+  <!-- WebAPK Manifest voor installatie via Google Chrome (3 puntjes) -->
+  <link rel="manifest" href='data:application/manifest+json,{"name":"Flitskaarten Ligo","short_name":"Flitskaarten","start_url":".","display":"standalone","background_color":"#f8fafc","theme_color":"#00a8b5","icons":[{"src":"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTZ8VKKjXuxeQmb8Z-uIrl6cxzKcuPCBtlh6_3Ke0bAT3B84HCXKsbJch7M&s=10","sizes":"192x192","type":"image/png","purpose":"any maskable"}]}'>
+
+  <style>
+    :root {
+      --primary: #00a8b5;
+      --primary-hover: #008b97;
+      --accent-dark: #124260;
+      --success: #10b981;
+      --danger: #ef4444;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --border: #cbd5e1;
+    }
+
+    * { 
+      box-sizing: border-box; 
+      margin: 0; 
+      padding: 0; 
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body { 
+      background-color: var(--bg); 
+      color: var(--text); 
+      min-height: 100vh; 
+      display: flex; 
+      flex-direction: column; 
+      align-items: center; 
+      padding: 12px; 
+    }
+
+    .container { width: 100%; max-width: 680px; }
+
+    header { 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+      margin-bottom: 20px; 
+      padding-bottom: 12px; 
+      border-bottom: 2px solid var(--border); 
+      gap: 8px; 
+      flex-wrap: wrap; 
+    }
+
+    .logo-container { display: flex; align-items: center; gap: 10px; }
+    .logo-img { height: 45px; width: auto; object-fit: contain; }
+    h1 { font-size: 1.3rem; font-weight: 700; color: var(--accent-dark); }
+
+    .nav-buttons { display: flex; gap: 6px; }
+    .nav-btn { 
+      cursor: pointer; 
+      padding: 8px 14px; 
+      border-radius: 8px; 
+      border: 1px solid var(--border); 
+      font-weight: 600; 
+      font-size: 0.9rem; 
+      background-color: #e2e8f0; 
+      color: var(--text); 
+      transition: all 0.2s ease; 
+    }
+    .nav-btn.active { background-color: var(--primary); color: white; border-color: var(--primary); }
+
+    button { 
+      cursor: pointer; 
+      padding: 12px 16px; 
+      border-radius: 10px; 
+      border: none; 
+      font-weight: 600; 
+      font-size: 1rem; 
+      transition: all 0.2s ease; 
+      touch-action: manipulation;
+    }
+    button:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    .btn-primary { background-color: var(--primary); color: white; }
+    .btn-primary:hover:not(:disabled) { background-color: var(--primary-hover); }
+    .btn-secondary { background-color: #e2e8f0; color: var(--text); }
+    .btn-secondary:hover:not(:disabled) { background-color: #cbd5e1; }
+
+    .btn-success { 
+      background-color: var(--success); 
+      color: white; 
+      flex: 1; 
+      padding: 16px 10px; 
+      font-size: 1.15rem; 
+      box-shadow: 0 4px 6px rgba(16, 185, 129, 0.2);
+    }
+    .btn-danger { 
+      background-color: var(--danger); 
+      color: white; 
+      flex: 1; 
+      padding: 16px 10px; 
+      font-size: 1.15rem; 
+      box-shadow: 0 4px 6px rgba(239, 68, 68, 0.2);
+    }
+
+    .view-panel { width: 100%; }
+
+    /* Scoreboard */
+    .stats-bar { 
+      display: grid; 
+      grid-template-columns: repeat(4, 1fr); 
+      background: var(--card-bg); 
+      padding: 12px 10px; 
+      border-radius: 12px; 
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05); 
+      margin-bottom: 16px; 
+      border: 1px solid var(--border); 
+      text-align: center;
+    }
+    .stat-value { font-size: 1.2rem; font-weight: 700; color: var(--accent-dark); }
+    .stat-label { font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+
+    /* Flitskaart Flip */
+    .card-container { 
+      perspective: 1000px; 
+      width: 100%; 
+      height: 300px; 
+      margin-bottom: 16px; 
+      cursor: pointer; 
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .card { 
+      width: 100%; 
+      height: 100%; 
+      position: relative; 
+      transform-style: preserve-3d; 
+      transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
+      border-radius: 16px; 
+      box-shadow: 0 8px 18px rgba(0,0,0,0.08); 
+    }
+    .card.flipped { transform: rotateY(180deg); }
+    .card-face { 
+      position: absolute; 
+      width: 100%; 
+      height: 100%; 
+      backface-visibility: hidden; 
+      display: flex; 
+      flex-direction: column; 
+      justify-content: center; 
+      align-items: center; 
+      border-radius: 16px; 
+      padding: 20px; 
+      background: var(--card-bg); 
+      border: 2px solid var(--border); 
+      text-align: center; 
+    }
+    .card-back { transform: rotateY(180deg); background: #f0fdfa; border-color: var(--primary); }
+    .card-title { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
+    
+    .card-image-box { max-height: 160px; margin-bottom: 8px; display: flex; justify-content: center; align-items: center; width: 100%; }
+    .card-image-box img { max-height: 160px; max-width: 100%; border-radius: 8px; object-fit: contain; }
+    
+    .card-text { 
+      font-size: clamp(1.3rem, 5vw, 2.2rem); 
+      font-weight: 700; 
+      word-break: break-word; 
+      color: var(--accent-dark); 
+      line-height: 1.2;
+    }
+    .card-hint { position: absolute; bottom: 10px; font-size: 0.75rem; color: var(--text-muted); }
+
+    .action-buttons { display: flex; gap: 12px; width: 100%; }
+    .shortcuts-hint { text-align: center; margin-top: 14px; font-size: 0.75rem; color: var(--text-muted); }
+
+    .card-panel { background: var(--card-bg); padding: 16px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 16px; }
+    .options-grid { display: flex; gap: 12px; flex-wrap: wrap; }
+    .options-grid .form-group { flex: 1; min-width: 200px; margin: 0; }
+    .form-group { margin-bottom: 14px; }
+    label { display: block; margin-bottom: 4px; font-size: 0.85rem; font-weight: 600; color: var(--accent-dark); }
+    input, textarea, select { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 0.95rem; }
+    textarea { resize: vertical; min-height: 90px; }
+
+    .word-pair-row { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
+    .word-pair-row input { flex: 1; }
+    .btn-delete-row { background: #fee2e2; color: var(--danger); padding: 0 12px; height: 40px; border-radius: 8px; font-size: 1rem; }
+
+    .list-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 8px; background: white; flex-wrap: wrap; gap: 8px; }
+    .completed-box { text-align: center; padding: 30px 16px; }
+    .completed-box h2 { font-size: 1.6rem; color: var(--success); margin-bottom: 8px; }
+
+    @media (max-width: 480px) {
+      body { padding: 8px; }
+      .logo-img { height: 38px; }
+      h1 { font-size: 1.1rem; }
+      .nav-btn { padding: 6px 10px; font-size: 0.8rem; }
+      .card-container { height: 260px; }
+      .action-buttons { gap: 8px; }
+      .btn-success, .btn-danger { padding: 14px 6px; font-size: 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <div class="logo-container">
+      <img src="https://www.oudenaarde.be/sites/default/files/2024-02/Ligo%20-%20afbeeldingen.png" alt="Ligo Logo" class="logo-img">
+      <h1 id="app-title">Flitskaarten</h1>
+    </div>
+    <div class="nav-buttons">
+      <button type="button" id="tab-practice" class="nav-btn active">Oefenen</button>
+      <button type="button" id="tab-manage" class="nav-btn">Lijsten Beheren 🔒</button>
+    </div>
+  </header>
+
+  <!-- OEFEN VIEW -->
+  <div id="view-practice" class="view-panel" style="display: block;">
+    <div class="card-panel">
+      <div class="options-grid">
+        <div class="form-group" id="list-select-group">
+          <label for="select-list">Woordenlijst:</label>
+          <select id="select-list"></select>
+        </div>
+        <div class="form-group">
+          <label for="select-direction">Oefenrichting:</label>
+          <select id="select-direction"></select>
+        </div>
+      </div>
+    </div>
+
+    <div id="practice-area">
+      <div class="stats-bar">
+        <div class="stat-item"><div class="stat-value" id="stat-total">0</div><div class="stat-label">Resterend</div></div>
+        <div class="stat-item"><div class="stat-value" id="stat-correct" style="color: var(--success);">0</div><div class="stat-label">Juist</div></div>
+        <div class="stat-item"><div class="stat-value" id="stat-wrong" style="color: var(--danger);">0</div><div class="stat-label">Fout</div></div>
+        <div class="stat-item"><div class="stat-value" id="stat-score">0%</div><div class="stat-label">Score</div></div>
+      </div>
+
+      <div class="card-container" id="card-click-area">
+        <div class="card" id="flashcard">
+          <div class="card-face card-front">
+            <div class="card-title" id="card-front-title">Woord</div>
+            <div class="card-image-box" id="card-front-img-box" style="display: none;"><img id="card-front-img" src="" alt="Afbeelding"></div>
+            <div class="card-text" id="card-front-text" style="display: block;">de pan</div>
+            <div class="card-hint">Tik op de kaart om te draaien</div>
+          </div>
+          <div class="card-face card-back">
+            <div class="card-title" id="card-back-title">Vertaling</div>
+            <div class="card-image-box" id="card-back-img-box" style="display: none;"><img id="card-back-img" src="" alt="Afbeelding"></div>
+            <div class="card-text" id="card-back-text" style="display: block;">la sartén</div>
+            <div class="card-hint">Beoordeel je antwoord hieronder</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="action-buttons">
+        <button type="button" class="btn-danger" id="btn-wrong" disabled>❌ Fout</button>
+        <button type="button" class="btn-success" id="btn-correct" disabled>✅ Juist</button>
+      </div>
+      <div class="shortcuts-hint">Tip: Tik op de kaart om de achterkant te zien.</div>
+    </div>
+
+    <div id="completion-area" class="card-panel completed-box" style="display: none;">
+      <h2>🎉 Goed gedaan!</h2>
+      <p style="margin-bottom: 16px; font-size: 1rem;">Je hebt alle kaarten geleerd!</p>
+      <div id="final-stats" style="margin-bottom: 20px; font-size: 1.1rem; font-weight: 600;"></div>
+      <button type="button" class="btn-primary" id="btn-restart-practice" style="width: 100%;">Opnieuw Oefenen</button>
+    </div>
+  </div>
+
+  <!-- LIJSTEN BEHEREN VIEW -->
+  <div id="view-manage" class="view-panel" style="display: none;">
+    
+    <!-- INLINE INLOG-VAK -->
+    <div id="manage-login-box" class="card-panel" style="text-align: center; max-width: 420px; margin: 20px auto;">
+      <h2 style="color: var(--accent-dark); margin-bottom: 8px;">🔐 Lesgeversbeheer</h2>
+      <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 16px;">
+        Voer het wachtwoord in om woordenlijsten aan te maken of te bewerken:
+      </p>
+      <div style="margin-bottom: 12px;">
+        <input type="password" id="inline-pass-input" placeholder="Wachtwoord" style="text-align: center; font-size: 1.1rem; padding: 10px;">
+      </div>
+      <div id="inline-pass-error" style="color: var(--danger); font-size: 0.85rem; margin-bottom: 12px; display: none; font-weight: 600;">
+        ⚠️ Onjuist wachtwoord. Probeer opnieuw.
+      </div>
+      <button type="button" class="btn-primary" id="btn-unlock-manage" style="width: 100%;">Inloggen</button>
+    </div>
+
+    <!-- BEHEER INHOUD -->
+    <div id="manage-content-box" style="display: none;">
+      <div class="card-panel">
+        <h2 style="margin-bottom: 14px; color: var(--accent-dark);" id="form-title">Nieuwe Lijst Aanmaken</h2>
+        <input type="hidden" id="edit-list-id">
+        
+        <div class="form-group">
+          <label for="list-title">Naam van de lijst:</label>
+          <input type="text" id="list-title" placeholder="bijv. De Keuken of Dieren">
+        </div>
+
+        <div class="options-grid" style="margin-bottom: 14px;">
+          <div class="form-group">
+            <label for="list-label-front">Kant 1 (voorkant):</label>
+            <input type="text" id="list-label-front" value="Woord">
+            <div style="margin-top: 6px;">
+              <select id="list-type-front">
+                <option value="text">Inhoud: Tekst / Woord</option>
+                <option value="image">Inhoud: Afbeelding (URL)</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="list-label-back">Kant 2 (achterkant):</label>
+            <input type="text" id="list-label-back" value="Vertaling">
+            <div style="margin-top: 6px;">
+              <select id="list-type-back">
+                <option value="text">Inhoud: Tekst / Woord</option>
+                <option value="image">Inhoud: Afbeelding (URL)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- SNELLE TEKST-INVOER -->
+        <div class="form-group" style="background: #f1f5f9; padding: 12px; border-radius: 8px; border: 1px solid var(--border);">
+          <label for="batch-import">📝 Snelle Tekst-invoer (Plak een lijst):</label>
+          <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 6px;">
+            Plak tekst als <code>de stoel: la chaise</code> of <code>de boom = l'arbre</code> (1 paar per regel):
+          </p>
+          <textarea id="batch-import" placeholder="de stoel: la chaise&#10;de boom: l'arbre&#10;het mes = el cuchillo"></textarea>
+        </div>
+
+        <!-- INDIVIDUELE VAKJES -->
+        <div class="form-group">
+          <label>🖼️ Of voeg losse vakjes toe (handig voor afbeelding URL's):</label>
+          <div id="word-pairs-container"></div>
+          <button type="button" class="btn-secondary" id="btn-add-row" style="width: 100%; margin-top: 8px;">+ Extra Vakje Toevoegen</button>
+        </div>
+
+        <div style="display: flex; gap: 8px; margin-top: 16px;">
+          <button type="button" class="btn-primary" id="btn-save-list" style="flex: 1;">Lijst Opslaan</button>
+          <button type="button" class="btn-secondary" id="cancel-edit-btn" style="display: none;">Annuleren</button>
+        </div>
+      </div>
+
+      <div class="card-panel">
+        <h3 style="color: var(--accent-dark); margin-bottom: 10px;">Bewaarde Lijsten & Links voor Cursisten</h3>
+        <div id="saved-lists-container"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+window.defaultLists = [
+  { id: 'keuken', title: 'Les 1 - De Keuken', labelFront: 'Woord', labelBack: 'Vertaling', typeFront: 'text', typeBack: 'text', words: [{ front: 'de pan', back: 'la sartén' }, { front: 'het mes', back: 'el cuchillo' }] },
+  { id: 'dieren', title: 'Les 2 - Dieren', labelFront: 'Woord', labelBack: 'Vertaling', typeFront: 'text', typeBack: 'text', words: [{ front: 'de hond', back: 'el perro' }, { front: 'de kat', back: 'el gato' }] }
+];
+
+window.lists = window.defaultLists;
+window.currentQueue = [];
+window.originalTotalCount = 0;
+window.correctAnswers = 0;
+window.wrongAnswers = 0;
+window.isFlipped = false;
+window.isAdminUnlocked = false;
+
+window.encodeData = function(obj) {
+  try {
+    return encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(obj)))));
+  } catch(e) { return ''; }
+};
+
+window.decodeData = function(str) {
+  try {
+    return JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(str)))));
+  } catch(e) { return null; }
+};
+
+window.safeTrim = function(str) {
+  return str ? String(str).replace(/^\s+|\s+$/g, '') : '';
+};
+
+window.findListById = function(arr, id) {
+  if (!arr) return null;
+  for (var i = 0; i < arr.length; i++) {
+    if (arr[i] && String(arr[i].id) === String(id)) return arr[i];
+  }
+  return null;
+};
+
+window.switchTab = function(tabName) {
+  try {
+    var vPractice = document.getElementById('view-practice');
+    var vManage = document.getElementById('view-manage');
+    var btnPractice = document.getElementById('tab-practice');
+    var btnManage = document.getElementById('tab-manage');
+    var loginBox = document.getElementById('manage-login-box');
+    var contentBox = document.getElementById('manage-content-box');
+
+    if (tabName === 'manage') {
+      if (vPractice) vPractice.style.display = 'none';
+      if (vManage) vManage.style.display = 'block';
+      if (btnPractice) btnPractice.className = 'nav-btn';
+      if (btnManage) btnManage.className = 'nav-btn active';
+
+      if (window.isAdminUnlocked) {
+        if (loginBox) loginBox.style.display = 'none';
+        if (contentBox) contentBox.style.display = 'block';
+        window.renderSavedLists();
+      } else {
+        if (loginBox) loginBox.style.display = 'block';
+        if (contentBox) contentBox.style.display = 'none';
+      }
+    } else {
+      if (vManage) vManage.style.display = 'none';
+      if (vPractice) vPractice.style.display = 'block';
+      if (btnManage) btnManage.className = 'nav-btn';
+      if (btnPractice) btnPractice.className = 'nav-btn active';
+    }
+  } catch(e) {}
+};
+
+window.unlockManage = function() {
+  var passInput = document.getElementById('inline-pass-input');
+  var errorMsg = document.getElementById('inline-pass-error');
+  var val = passInput ? window.safeTrim(passInput.value) : '';
+
+  if (val === 'ligo') {
+    window.isAdminUnlocked = true;
+    if (errorMsg) errorMsg.style.display = 'none';
+    window.switchTab('manage');
+  } else {
+    if (errorMsg) errorMsg.style.display = 'block';
+  }
+};
+
+window.updateListDropdown = function() {
+  var select = document.getElementById('select-list');
+  if (!select) return;
+  select.innerHTML = '';
+  window.lists.forEach(function(l) {
+    var opt = document.createElement('option');
+    opt.value = l.id;
+    opt.textContent = l.title + ' (' + (l.words ? l.words.length : 0) + ' items)';
+    select.appendChild(opt);
+  });
+};
+
+window.onListChange = function() {
+  window.updateDirectionDropdown();
+  window.startSession();
+};
+
+window.updateDirectionDropdown = function() {
+  var selectList = document.getElementById('select-list');
+  var selectDirection = document.getElementById('select-direction');
+  if (!selectList || !selectDirection) return;
+
+  var list = window.findListById(window.lists, selectList.value) || window.lists[0];
+  if (!list) return;
+
+  var curVal = selectDirection.value || 'front-back';
+  selectDirection.innerHTML = '';
+
+  var opt1 = document.createElement('option'); opt1.value = 'front-back'; opt1.textContent = (list.labelFront || 'Woord') + ' ➔ ' + (list.labelBack || 'Vertaling'); selectDirection.appendChild(opt1);
+  var opt2 = document.createElement('option'); opt2.value = 'back-front'; opt2.textContent = (list.labelBack || 'Vertaling') + ' ➔ ' + (list.labelFront || 'Woord'); selectDirection.appendChild(opt2);
+  var opt3 = document.createElement('option'); opt3.value = 'random'; opt3.textContent = 'Willekeurig (beide kanten)'; selectDirection.appendChild(opt3);
+
+  if (['front-back', 'back-front', 'random'].indexOf(curVal) !== -1) {
+    selectDirection.value = curVal;
+  }
+};
+
+window.startSession = function() {
+  var selectList = document.getElementById('select-list');
+  var selectDirection = document.getElementById('select-direction');
+  if (!selectList || !selectDirection) return;
+
+  var list = window.findListById(window.lists, selectList.value) || window.lists[0];
+  if (!list || !list.words || list.words.length === 0) return;
+
+  var dir = selectDirection.value;
+  window.currentQueue = list.words.map(function(w) {
+    var isRev = dir === 'back-front' ? true : (dir === 'random' ? Math.random() < 0.5 : false);
+    return { front: w.front, back: w.back, isReversed: isRev };
+  });
+
+  window.currentQueue.sort(function() { return Math.random() - 0.5; });
+  window.originalTotalCount = window.currentQueue.length;
+  window.correctAnswers = 0;
+  window.wrongAnswers = 0;
+
+  var practiceArea = document.getElementById('practice-area');
+  var completionArea = document.getElementById('completion-area');
+  if (practiceArea) practiceArea.style.display = 'block';
+  if (completionArea) completionArea.style.display = 'none';
+
+  window.updateStats();
+  window.showCurrentCard();
+};
+
+window.showCurrentCard = function() {
+  var card = document.getElementById('flashcard');
+  if (window.currentQueue.length === 0) { window.finishSession(); return; }
+  window.isFlipped = false;
+  if (card) card.classList.remove('flipped');
+  window.updateActionButtons();
+
+  setTimeout(function() {
+    if (window.currentQueue.length === 0) return;
+    var currentWord = window.currentQueue[0];
+    var selectList = document.getElementById('select-list');
+    var list = window.findListById(window.lists, selectList ? selectList.value : '') || window.lists[0];
+
+    var curFrontContent = currentWord.isReversed ? currentWord.back : currentWord.front;
+    var curFrontType = currentWord.isReversed ? list.typeBack : list.typeFront;
+    var curBackContent = currentWord.isReversed ? currentWord.front : currentWord.back;
+    var curBackType = currentWord.isReversed ? list.typeFront : list.typeBack;
+
+    var fTitle = document.getElementById('card-front-title');
+    var bTitle = document.getElementById('card-back-title');
+    if (fTitle) fTitle.innerText = currentWord.isReversed ? list.labelBack : list.labelFront;
+    if (bTitle) bTitle.innerText = currentWord.isReversed ? list.labelFront : list.labelBack;
+
+    window.renderFace('front', curFrontContent, curFrontType);
+    window.renderFace('back', curBackContent, curBackType);
+  }, 150);
+};
+
+window.renderFace = function(side, content, type) {
+  var imgBox = document.getElementById('card-' + side + '-img-box');
+  var imgElem = document.getElementById('card-' + side + '-img');
+  var textElem = document.getElementById('card-' + side + '-text');
+
+  if (type === 'image') {
+    if (imgElem) imgElem.src = content;
+    if (imgBox) imgBox.style.display = 'flex';
+    if (textElem) textElem.style.display = 'none';
+  } else {
+    if (imgBox) imgBox.style.display = 'none';
+    if (textElem) {
+      textElem.innerText = content;
+      textElem.style.display = 'block';
+    }
+  }
+};
+
+window.flipCard = function() {
+  window.isFlipped = !window.isFlipped;
+  var card = document.getElementById('flashcard');
+  if (card) card.classList.toggle('flipped');
+  window.updateActionButtons();
+};
+
+window.updateActionButtons = function() {
+  var btnW = document.getElementById('btn-wrong');
+  var btnC = document.getElementById('btn-correct');
+  if (btnW) btnW.disabled = !window.isFlipped;
+  if (btnC) btnC.disabled = !window.isFlipped;
+};
+
+window.answerCard = function(isCorrect) {
+  if (!window.isFlipped || window.currentQueue.length === 0) return;
+  var currentCard = window.currentQueue.shift();
+  if (isCorrect) { window.correctAnswers++; } else { window.wrongAnswers++; window.currentQueue.push(currentCard); }
+  window.updateStats();
+  window.showCurrentCard();
+};
+
+window.updateStats = function() {
+  var st = document.getElementById('stat-total');
+  var sc = document.getElementById('stat-correct');
+  var sw = document.getElementById('stat-wrong');
+  var ss = document.getElementById('stat-score');
+
+  if (st) st.innerText = window.currentQueue.length;
+  if (sc) sc.innerText = window.correctAnswers;
+  if (sw) sw.innerText = window.wrongAnswers;
+  var totalAnswered = window.correctAnswers + window.wrongAnswers;
+  if (ss) ss.innerText = (totalAnswered > 0 ? Math.round((window.correctAnswers / totalAnswered) * 100) : 0) + '%';
+};
+
+window.finishSession = function() {
+  var pArea = document.getElementById('practice-area');
+  var cArea = document.getElementById('completion-area');
+  var fStats = document.getElementById('final-stats');
+
+  if (pArea) pArea.style.display = 'none';
+  if (cArea) cArea.style.display = 'block';
+  var totalAttempts = window.correctAnswers + window.wrongAnswers;
+  var finalScore = totalAttempts > 0 ? Math.round((window.correctAnswers / totalAttempts) * 100) : 100;
+  if (fStats) fStats.innerHTML = 'Geleerd: ' + window.originalTotalCount + ' items<br>Score: ' + finalScore + '%';
+};
+
+window.addWordRow = function(front, back) {
+  var container = document.getElementById('word-pairs-container');
+  if (!container) return;
+  var row = document.createElement('div'); row.className = 'word-pair-row';
+  row.innerHTML = '<input type="text" class="input-front" value="' + (front || '') + '" placeholder="Kant 1 (Woord of Foto URL)"><input type="text" class="input-back" value="' + (back || '') + '" placeholder="Kant 2 (Woord of Foto URL)"><button type="button" class="btn-delete-row" onclick="this.parentElement.remove()">✕</button>';
+  container.appendChild(row);
+};
+
+window.saveList = function() {
+  var titleElem = document.getElementById('list-title');
+  var editIdElem = document.getElementById('edit-list-id');
+  var title = titleElem ? window.safeTrim(titleElem.value) : '';
+  var editId = editIdElem ? editIdElem.value : '';
+
+  if (!title) { alert('Vul een naam in voor de lijst.'); return; }
+
+  var words = [];
+
+  var batchInput = document.getElementById('batch-import');
+  var batchText = batchInput ? window.safeTrim(batchInput.value) : '';
+  if (batchText) {
+    var lines = batchText.split('\n');
+    lines.forEach(function(line) {
+      line = window.safeTrim(line);
+      if (!line) return;
+      var sepIdx = line.indexOf(':');
+      if (sepIdx === -1) sepIdx = line.indexOf('=');
+
+      if (sepIdx !== -1) {
+        var frontPart = window.safeTrim(line.substring(0, sepIdx));
+        var backPart = window.safeTrim(line.substring(sepIdx + 1));
+        if (frontPart && backPart) {
+          words.push({ front: frontPart, back: backPart });
+        }
+      }
+    });
+  }
+
+  var rows = document.querySelectorAll('.word-pair-row');
+  rows.forEach(function(r) {
+    var inF = r.querySelector('.input-front');
+    var inB = r.querySelector('.input-back');
+    var f = inF ? window.safeTrim(inF.value) : '';
+    var b = inB ? window.safeTrim(inB.value) : '';
+    if (f && b) words.push({ front: f, back: b });
+  });
+
+  if (words.length === 0) { 
+    alert('Voeg minimaal 1 item toe (via de snelle tekst-invoer of de losse vakjes).'); 
+    return; 
+  }
+
+  var labelFElem = document.getElementById('list-label-front');
+  var typeFElem = document.getElementById('list-type-front');
+  var labelBElem = document.getElementById('list-label-back');
+  var typeBElem = document.getElementById('list-type-back');
+
+  var listObj = {
+    id: editId || ('lijst-' + Date.now()),
+    title: title,
+    labelFront: (labelFElem && window.safeTrim(labelFElem.value)) || 'Woord',
+    typeFront: typeFElem ? typeFElem.value : 'text',
+    labelBack: (labelBElem && window.safeTrim(labelBElem.value)) || 'Vertaling',
+    typeBack: typeBElem ? typeBElem.value : 'text',
+    words: words
+  };
+
+  if (editId) {
+    var idx = window.lists.findIndex(function(l) { return String(l.id) === String(editId); });
+    if (idx !== -1) window.lists[idx] = listObj;
+  } else {
+    window.lists.push(listObj);
+  }
+
+  try {
+    if (typeof localStorage !== 'undefined' && localStorage) {
+      localStorage.setItem('flitskaarten_lijsten', JSON.stringify(window.lists));
+    }
+  } catch(e){}
+
+  window.updateListDropdown();
+  window.renderSavedLists();
+  window.resetListForm();
+  window.switchTab('practice');
+};
+
+window.editList = function(id) {
+  var l = window.findListById(window.lists, id);
+  if (!l) return;
+
+  var fTitle = document.getElementById('form-title');
+  var editId = document.getElementById('edit-list-id');
+  var lTitle = document.getElementById('list-title');
+  var labelF = document.getElementById('list-label-front');
+  var typeF = document.getElementById('list-type-front');
+  var labelB = document.getElementById('list-label-back');
+  var typeB = document.getElementById('list-type-back');
+  var batch = document.getElementById('batch-import');
+  var container = document.getElementById('word-pairs-container');
+  var cancelBtn = document.getElementById('cancel-edit-btn');
+
+  if (fTitle) fTitle.innerText = 'Lijst Bewerken: ' + l.title;
+  if (editId) editId.value = l.id;
+  if (lTitle) lTitle.value = l.title;
+  if (labelF) labelF.value = l.labelFront || 'Woord';
+  if (typeF) typeF.value = l.typeFront || 'text';
+  if (labelB) labelB.value = l.labelBack || 'Vertaling';
+  if (typeB) typeB.value = l.typeBack || 'text';
+
+  if (batch) batch.value = '';
+  if (container) container.innerHTML = '';
+
+  if (l.words && l.words.length > 0) {
+    l.words.forEach(function(w) {
+      window.addWordRow(w.front, w.back);
+    });
+  } else {
+    window.addWordRow();
+  }
+
+  if (cancelBtn) cancelBtn.style.display = 'inline-block';
+
+  var manageBox = document.getElementById('manage-content-box');
+  if (manageBox && manageBox.scrollIntoView) {
+    manageBox.scrollIntoView({ behavior: 'smooth' });
+  }
+};
+
+window.renderSavedLists = function() {
+  var container = document.getElementById('saved-lists-container');
+  if (!container) return;
+  container.innerHTML = '';
+
+  window.lists.forEach(function(l) {
+    var item = document.createElement('div'); item.className = 'list-item';
+    var baseUrl = window.location.href.split('?')[0].split('#')[0];
+    
+    var encodedData = window.encodeData(l);
+    var studentUrl = baseUrl + '?lijst=' + encodeURIComponent(l.id) + '&data=' + encodedData;
+
+    item.innerHTML = '<div><strong>' + l.title + '</strong> <small>(' + l.words.length + ' items)</small></div>' +
+      '<div style="display:flex; gap:6px; flex-wrap:wrap;">' +
+      '<button type="button" class="btn-primary" style="font-size:0.8rem; padding:6px 10px;" id="copy-btn-' + l.id + '">📋 Kopieer Link voor Cursisten</button>' +
+      '<button type="button" class="btn-secondary" style="font-size:0.8rem; padding:6px 10px;" onclick="window.editList(\'' + l.id + '\')">✏️ Bewerken</button>' +
+      '<button type="button" class="btn-danger" style="font-size:0.8rem; padding:6px 10px;" onclick="window.deleteList(\'' + l.id + '\')">✕ Verwijderen</button>' +
+      '</div>';
+    container.appendChild(item);
+
+    setTimeout(function() {
+      var btn = document.getElementById('copy-btn-' + l.id);
+      if (btn) {
+        btn.onclick = function() {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(studentUrl).then(function() {
+              alert('Link gekopieerd naar klembord! Cursisten die deze link openen zien enkel deze woordenlijst.');
+            }).catch(function() {
+              prompt('Kopieer onderstaande link voor cursisten:', studentUrl);
+            });
+          } else {
+            prompt('Kopieer onderstaande link voor cursisten:', studentUrl);
+          }
+        };
+      }
+    }, 50);
+  });
+};
+
+window.deleteList = function(id) {
+  if (confirm('Weet je zeker dat je deze lijst wilt verwijderen?')) {
+    window.lists = window.lists.filter(function(l) { return String(l.id) !== String(id); });
+    try {
+      if (typeof localStorage !== 'undefined' && localStorage) {
+        localStorage.setItem('flitskaarten_lijsten', JSON.stringify(window.lists));
+      }
+    } catch(e){}
+    window.updateListDropdown();
+    window.renderSavedLists();
+  }
+};
+
+window.resetListForm = function() {
+  var fTitle = document.getElementById('form-title');
+  var editId = document.getElementById('edit-list-id');
+  var lTitle = document.getElementById('list-title');
+  var batch = document.getElementById('batch-import');
+  var container = document.getElementById('word-pairs-container');
+  var cancelBtn = document.getElementById('cancel-edit-btn');
+
+  if (fTitle) fTitle.innerText = 'Nieuwe Lijst Aanmaken';
+  if (editId) editId.value = '';
+  if (lTitle) lTitle.value = '';
+  if (batch) batch.value = '';
+  if (container) container.innerHTML = '';
+  if (cancelBtn) cancelBtn.style.display = 'none';
+  window.addWordRow();
+};
+
+document.addEventListener('click', function(e) {
+  var t = e.target;
+  while (t && t !== document) {
+    if (t.id === 'tab-practice') { window.switchTab('practice'); return; }
+    if (t.id === 'tab-manage') { window.switchTab('manage'); return; }
+    if (t.id === 'btn-unlock-manage') { window.unlockManage(); return; }
+    if (t.id === 'card-click-area' || t.id === 'flashcard') { window.flipCard(); return; }
+    if (t.id === 'btn-wrong') { window.answerCard(false); return; }
+    if (t.id === 'btn-correct') { window.answerCard(true); return; }
+    if (t.id === 'btn-add-row') { window.addWordRow(); return; }
+    if (t.id === 'btn-save-list') { window.saveList(); return; }
+    if (t.id === 'btn-restart-practice') { window.startSession(); return; }
+    if (t.id === 'cancel-edit-btn') { window.resetListForm(); return; }
+    t = t.parentNode;
+  }
+});
+
+document.addEventListener('change', function(e) {
+  if (e.target && e.target.id === 'select-list') { window.onListChange(); }
+  if (e.target && e.target.id === 'select-direction') { window.startSession(); }
+});
+
+try {
+  if (typeof localStorage !== 'undefined' && localStorage) {
+    var stored = localStorage.getItem('flitskaarten_lijsten');
+    if (stored) {
+      var parsed = JSON.parse(stored);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        window.lists = parsed;
+      }
+    }
+  }
+} catch(e){}
+
+window.checkUrlForList = function() {
+  try {
+    var query = window.location.search;
+    if (!query) return;
+
+    var params = new URLSearchParams(query);
+    var listId = params.get('lijst') || params.get('id');
+    var dataParam = params.get('data');
+
+    if (dataParam) {
+      var decodedList = window.decodeData(dataParam);
+      if (decodedList && decodedList.id && decodedList.words) {
+        window.lists = [decodedList];
+        window.updateListDropdown();
+        listId = decodedList.id;
+
+        var grp = document.getElementById('list-select-group');
+        if (grp) grp.style.display = 'none';
+      }
+    } else if (listId) {
+      var found = window.findListById(window.lists, listId);
+      if (found) {
+        window.lists = [found];
+        window.updateListDropdown();
+
+        var grp2 = document.getElementById('list-select-group');
+        if (grp2) grp2.style.display = 'none';
+      }
+    }
+  } catch(e){}
+};
+
+function initApp() {
+  var passInput = document.getElementById('inline-pass-input');
+  if (passInput) {
+    passInput.onkeyup = function(e) {
+      if (e.key === 'Enter') window.unlockManage();
+    };
+  }
+
+  window.updateListDropdown();
+  window.checkUrlForList();
+  window.onListChange();
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initApp);
+} else {
+  initApp();
+}
+</script>
+</body>
+</html>
